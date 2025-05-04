@@ -1,0 +1,56 @@
+services:
+  db_recipes:
+    restart: always
+    image: postgres:16-alpine
+    networks:
+      tailscale_default-bitesized:
+        ipv4_address: 172.30.0.6
+    volumes:
+      - ./postgresql:/var/lib/postgresql/data
+    env_file:
+      - stack.env
+
+  web_recipes:
+    image: vabene1111/recipes:latest
+    env_file:
+      - stack.env
+    volumes:
+      - staticfiles:/opt/recipes/staticfiles
+      # Do not make this a bind mount, see https://docs.tandoor.dev/install/docker/#volumes-vs-bind-mounts
+      - nginx_config:/opt/recipes/nginx/conf.d 
+      - ./mediafiles:/opt/recipes/mediafiles
+    networks:
+      tailscale_default-bitesized:
+        ipv4_address: 172.30.0.7
+    depends_on:
+      - db_recipes
+
+  nginx_recipes:
+    image: nginx:mainline-alpine
+    restart: always
+    ports:
+      - 12008:80
+    networks:
+      tailscale_default-bitesized:
+        ipv4_address: 172.30.0.8
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+    env_file:
+      - stack.env
+    depends_on:
+      - web_recipes
+    volumes:
+      # Do not make this a bind mount, see https://docs.tandoor.dev/install/docker/#volumes-vs-bind-mounts
+      - nginx_config:/etc/nginx/conf.d:ro
+      - staticfiles:/static
+      - ./mediafiles:/media
+
+volumes:
+  nginx_config:
+  staticfiles:
+
+networks:
+  tailscale_default-bitesized:
+    external: true
+

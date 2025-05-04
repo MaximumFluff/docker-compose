@@ -1,0 +1,34 @@
+services:
+  tail-dns:
+    container_name: tailscale-dns-bitesized
+    image: tailscale/tailscale:latest
+    hostname: cerritos-bitesized-dns
+    environment:
+      - TS_AUTHKEY=<authkey>
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    ports:
+      - "7500:80/tcp"
+    devices:
+      - "/dev/net/tun"
+    volumes:
+      # Path to your Tailscale state directory, make sure to change the left side of : to your path.
+      - /home/alex/tailscale-pihole/state:/var/lib/tailscale
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+  pihole-tailscale:
+    image: pihole/pihole:latest
+    container_name: tailscale-pihole-bitesized
+    network_mode: service:tail-dns
+    environment:
+      TZ: 'Europe/Helsinki'
+      WEBPASSWORD: <password>
+    volumes:
+      - /home/alex/tailscale-pihole/etc-pihole:/etc/pihole
+      - /home/alex/tailscale-pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+    depends_on:
+      - tail-dns
+    restart: unless-stopped
+

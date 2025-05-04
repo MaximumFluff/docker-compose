@@ -1,0 +1,41 @@
+services:
+  tail-network-nginx:
+    container_name: tailscale-bitesized-npm
+    image: tailscale/tailscale:latest
+    hostname: cerritos-bitesized-nginx-proxy-manager
+    environment:
+      - TS_AUTHKEY=<authkey>
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    devices:
+      - "/dev/net/tun"
+    volumes:
+      # Path to your Tailscale state directory, make sure to change the left side of : to your path.
+      - /home/alex/tailscale-nginx/state:/var/lib/tailscale
+    cap_add:
+      - net_admin
+      - sys_module
+    restart: unless-stopped
+  nginx-proxy-manager:
+    container_name: nginx-proxy-manager-tailscale
+    image: 'jc21/nginx-proxy-manager:latest'
+    # Only needed if adding it to a tailnet, set the correct ip
+    # The internal is something I've added, totally not needed I just wanted to keep
+    # my networks tab clean.
+    # Make sure the ip addresses are unique and not in use.
+    network_mode: service:tail-network-nginx
+    volumes:
+      # Path to your Tailscale state directory, make sure to change the left side of : to your path.
+      - /home/alex/tailscale-nginx/data/nginxproxymanager:/data
+      - /home/alex/tailscale-nginx/data/nginxproxymanager/letsencrypt:/etc/letsencrypt
+      #- /path/to/docker/nginxproxymanager/data:/data
+      #- /path/to/docker/nginxproxymanager/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - tail-network-nginx
+    restart: unless-stopped
+
+
