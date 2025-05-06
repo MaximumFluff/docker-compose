@@ -11,6 +11,9 @@ services:
       - type: bind
         source: /mnt/Films
         target: /Films
+      - type: bind
+        source: /mnt/Music
+        target: /Music
     ports:
       - 8096:8096
       - 8920:8920 #optional
